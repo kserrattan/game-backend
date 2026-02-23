@@ -180,9 +180,14 @@ app.MapPost("/chat", async (ChatRequest req, IHttpClientFactory httpFactory) =>
     }
 
     var openAiJson = await openAiResp.Content.ReadAsStringAsync();
+    Console.WriteLine(openAiJson);
+
     var openAi = JsonSerializer.Deserialize<OpenAiResponsesResponse>(openAiJson, Json.Options);
 
-    var reply = openAi?.OutputText ?? "No response";
+    var reply =
+        openAi?.OutputText
+        ?? openAi?.Output?.FirstOrDefault()?.Content?.FirstOrDefault()?.Text
+        ?? "No response";
 
     // ---- Response shape matches Unity JsonUtility ----
     return Results.Json(new ChatResponse
@@ -272,6 +277,18 @@ public record OpenAiResponsesRequest
 public record OpenAiResponsesResponse
 {
     [JsonPropertyName("output_text")] public string? OutputText { get; set; }
+    [JsonPropertyName("output")] public List<OpenAiOutputItem>? Output { get; set; }
+}
+
+public record OpenAiOutputItem
+{
+    [JsonPropertyName("content")] public List<OpenAiContentItem>? Content { get; set; }
+}
+
+public record OpenAiContentItem
+{
+    [JsonPropertyName("type")] public string? Type { get; set; }
+    [JsonPropertyName("text")] public string? Text { get; set; }
 }
 
 public static class Json
