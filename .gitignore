@@ -7,3 +7,4 @@ out/
 *.db
 .env
 node_modules/
+Properties/launchSettings.json
