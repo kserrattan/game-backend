@@ -189,6 +189,33 @@ app.MapPost("/chat", async (ChatRequest req, IHttpClientFactory httpFactory) =>
         ?? openAi?.Output?.FirstOrDefault()?.Content?.FirstOrDefault()?.Text
         ?? "No response";
 
+    var logPayload = new
+    {
+        npc_id = npcId,
+        user_text = text,
+        ai_reply = reply
+    };
+
+    var logJson = JsonSerializer.Serialize(logPayload, Json.Options);
+
+    using var logReq = new HttpRequestMessage(
+        HttpMethod.Post,
+        $"{supabaseUrl}/rest/v1/chat_logs"
+    );
+
+    logReq.Headers.Add("apikey", supabaseKey);
+    logReq.Headers.Add("Authorization", $"Bearer {supabaseKey}");
+    logReq.Headers.Add("Prefer", "return=minimal");
+    logReq.Content = new StringContent(logJson, Encoding.UTF8, "application/json");
+
+    using var logResp = await http.SendAsync(logReq);
+
+    if (!logResp.IsSuccessStatusCode)
+    {
+        var err = await logResp.Content.ReadAsStringAsync();
+        Console.WriteLine("LOG FAILED: " + err);
+    }
+
     // ---- Response shape matches Unity JsonUtility ----
     return Results.Json(new ChatResponse
     {
